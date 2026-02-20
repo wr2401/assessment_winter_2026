@@ -22,14 +22,15 @@ namespace rm_a0 {
 // ==================== A0-01 Temperature ====================
 // TODO: 完成下面函数的实现
 double CelsiusToFahrenheit(double celsius) {
-    (void)celsius;
-    return 0.0;
+    return celsius * 9.0 / 5.0 + 32.0;
 }
-// 这里是格式化输出的函数
+
 std::string FormatFahrenheit(double fahrenheit) {
-    (void)fahrenheit;
-    return {};
+    char buffer[100];
+    snprintf(buffer, sizeof(buffer), "%.2f\n", fahrenheit);
+    return std::string(buffer);
 }
+
 
 std::string SolveTemperature(const std::string& input, bool& ok) {
     std::istringstream in(input);
