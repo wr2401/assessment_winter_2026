@@ -190,7 +190,7 @@ private:
   std::vector<int> digits_;
 };
 */
-/*class BigInt {
+class BigInt {
 public:
   BigInt(){ digits_.push_back(0);}
 
@@ -225,7 +225,8 @@ public:
 private:
   // Little-endian digits, each 0..9.
   std::vector<int> digits_;
-};*/
+};
+
 std::string SolveBigIntAdd(const std::string& input, bool& ok) {
     std::istringstream in(input);
     std::string a;
@@ -346,7 +347,7 @@ private:
   FILE *fp_ = nullptr;
 };
 */
-/*class FileHandle {
+class FileHandle {
 public:
   FileHandle() = default;
   FileHandle(const char *path, const char *mode)
@@ -381,7 +382,7 @@ public:
 private:
   FILE *fp_ = nullptr;
 };
-*/
+
 bool CopyFile(const std::string& in_path, const std::string& out_path) {
 
     FileHandle in(in_path.c_str(), "rb");
