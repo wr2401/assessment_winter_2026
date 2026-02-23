@@ -384,7 +384,7 @@ private:
 */
 bool CopyFile(const std::string& in_path, const std::string& out_path) {
 
-    ileHandle in(in_path.c_str(), "rb");
+    FileHandle in(in_path.c_str(), "rb");
     if (!in.valid()) return false;
 
     FileHandle out(out_path.c_str(), "wb");
