@@ -47,12 +47,13 @@ std::string SolveTemperature(const std::string& input, bool& ok) {
 // ==================== A0-02 Leap Year ====================
 // TODO: 完成下面函数的实现
 bool IsLeapYear(int year) {
+    if(year % 4 == 0&& year % 100 != 0 || year % 400 == 0) return true;
     return false;
 }
 // TODO: 完成下面函数的实现,不要新增行数，只修改返回值
 std::string FormatLeapYearAnswer(bool is_leap_year) {
     (void)is_leap_year;
-    return {};
+    return is_leap_year ? "YES\n" : "NO\n";
 }
 
 std::string SolveLeapYear(const std::string& input, bool& ok) {
@@ -72,7 +73,7 @@ std::string SolveLeapYear(const std::string& input, bool& ok) {
 long long RangeSum(long long l, long long r) {
     (void)l;
     (void)r;
-    return 0;
+    return (l + r) * (r - l + 1) / 2                                                                                                                                                                                                            ;
 }
 
 std::string SolveRangeSum(const std::string& input, bool& ok) {
@@ -89,6 +90,7 @@ std::string SolveRangeSum(const std::string& input, bool& ok) {
     return out.str();
 }
 
+
 // ==================== A0-04 Vowel Count ====================
 
 namespace {
@@ -97,6 +99,8 @@ namespace {
         bool IsVowelChar(unsigned char c) {
             // TODO: 完成下面函数的实现
             (void)c;
+            c=tolower(c);
+            if(c=='a'||c=='e'||c=='i'||c=='o'||c=='u') return true;
             return false;
         }
 
@@ -106,7 +110,9 @@ namespace {
 std::size_t CountVowels(const std::string& line) {
     std::size_t count = 0;
     // TODO: 完成下面函数的实现
-        
+    for(char c:line){
+        if(a0_04_detail::IsVowelChar(c)) count++;
+    }
     return count;
 }
 
@@ -129,9 +135,28 @@ ScoreStatsResult ComputeScoreStats(const std::string& input, bool& ok) {
     ok = false;
     std::istringstream in(input);
     // TODO: 完成下面函数的实现
-
-    return ScoreStatsResult{};
-}
+    int n;
+    in >> n;
+    
+    std::string name;
+    int score;
+    int sum = 0;
+    int max_score = -1;
+    std::string max_name;
+    
+    for (int i = 0; i < n; i++) {
+        in >> name >> score;    
+        sum += score;
+        if (score > max_score) {
+            max_score = score;
+            max_name = name;
+        }
+    }
+    
+    double avg = static_cast<double>(sum) / n;
+    ok = true;
+    return ScoreStatsResult{max_name, max_score, avg};
+}  
 
 std::string SolveScoreStats(const std::string& input, bool& ok) {
     auto res = ComputeScoreStats(input, ok);
@@ -165,7 +190,42 @@ private:
   std::vector<int> digits_;
 };
 */
+/*class BigInt {
+public:
+  BigInt(){ digits_.push_back(0);}
 
+  // Constructs from a non-negative decimal string.
+  explicit BigInt(const std::string &s){
+        for (int i = s.size() - 1; i >= 0; i--) {
+            digits_.push_back(s[i] - '0');
+        }
+  }
+
+  friend BigInt operator+(const BigInt &a, const BigInt &b){
+    BigInt result;
+    result.digits_.clear();
+    int carry = 0;
+    size_t max_size = std::max(a.digits_.size(), b.digits_.size());
+    for (size_t i = 0; i < max_size || carry; i++) {
+        int digit_a = i < a.digits_.size() ? a.digits_[i] : 0;
+        int digit_b = i < b.digits_.size() ? b.digits_[i] : 0;
+        int sum = digit_a + digit_b + carry;
+        result.digits_.push_back(sum % 10);
+        carry = sum / 10;
+    }
+    return result;
+  }
+  friend std::ostream &operator<<(std::ostream &os, const BigInt &x){
+        for (int i = x.digits_.size() - 1; i >= 0; i--) {
+            os << x.digits_[i];
+        }
+        return os;
+  }
+
+private:
+  // Little-endian digits, each 0..9.
+  std::vector<int> digits_;
+};*/
 std::string SolveBigIntAdd(const std::string& input, bool& ok) {
     std::istringstream in(input);
     std::string a;
@@ -181,8 +241,13 @@ std::string SolveBigIntAdd(const std::string& input, bool& ok) {
     }
 
     ok = true;
+    BigInt big_a(a);
+    BigInt big_b(b);
+    BigInt sum = big_a + big_b;
+    out << sum << "\n";
     return out.str();
 }
+
 
 // ==================== A0-07 Log Analyzer ====================
 /*
@@ -197,7 +262,35 @@ struct LogStats {
 };
 */
 LogStats AnalyzeLogFile(const std::string& path, bool& ok) {
-    return {};
+    std::ifstream file(path);
+    if (!file.is_open()) {
+        ok = false;
+        return {};
+    }
+    LogStats stats;
+    std::string line;
+    int count=0;
+    while(std::getline(file, line)) {
+        if(line.empty()) continue;
+        std::istringstream in(line);
+        std::string level;
+        long long ms;
+        if (!(in >> level >> ms)) continue;
+        if(level == "INFO") stats.info++;
+        else if(level == "WARN") stats.warn++;
+        else if(level == "ERROR") stats.error++;
+        else continue;
+        stats.avg_ms += ms;
+        if(ms > stats.max_ms) {
+            stats.max_ms = ms;
+            stats.max_level = level;
+        }
+        count++;
+    }
+    if(count == 0) ok = false;
+    else stats.avg_ms /= count;
+    
+    return stats;
 }
 
 std::string SolveLogAnalyzer(const std::string& input, bool& ok) {
@@ -253,10 +346,61 @@ private:
   FILE *fp_ = nullptr;
 };
 */
+/*class FileHandle {
+public:
+  FileHandle() = default;
+  FileHandle(const char *path, const char *mode)
+    : fp_(fopen(path, mode)) {}
 
+  ~FileHandle(){
+    if (fp_) fclose(fp_);
+}
+  FileHandle(const FileHandle &) = delete;
+  FileHandle &operator=(const FileHandle &) = delete;
+
+  FileHandle(FileHandle &&other) noexcept
+    : fp_(other.fp_) {
+        other.fp_ = nullptr;
+  }
+  FileHandle &operator=(FileHandle &&other) noexcept{
+        if (this != &other) {
+            if (fp_) fclose(fp_);
+            fp_ = other.fp_;
+            other.fp_ = nullptr;
+        }
+        return *this;
+    }
+
+  bool valid() const{
+    return fp_ != nullptr;
+}
+  FILE *get() const{
+        return fp_;
+      }
+
+private:
+  FILE *fp_ = nullptr;
+};
+*/
 bool CopyFile(const std::string& in_path, const std::string& out_path) {
 
-    return true;
+    ileHandle in(in_path.c_str(), "rb");
+    if (!in.valid()) return false;
+
+    FileHandle out(out_path.c_str(), "wb");
+    if (!out.valid()) return false;
+
+    char buffer[4096];
+    size_t bytes;
+
+    while ((bytes = fread(buffer, 1, sizeof(buffer), in.get())) > 0) {
+        if (fwrite(buffer, 1, bytes, out.get()) != bytes) {
+            return false;
+        }
+    }
+
+    return !ferror(in.get());
+    
 }
 
 std::string SolveRaiiCopy(const std::string& input, bool& ok) {

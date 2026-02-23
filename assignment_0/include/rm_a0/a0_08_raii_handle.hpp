@@ -8,17 +8,34 @@ namespace rm_a0 {
 class FileHandle {
 public:
   FileHandle() = default;
-  FileHandle(const char *path, const char *mode);
-  ~FileHandle();
+  FileHandle(const char *path, const char *mode)
+    : fp_(fopen(path, mode)) {}
 
+  ~FileHandle(){
+    if (fp_) fclose(fp_);
+}
   FileHandle(const FileHandle &) = delete;
   FileHandle &operator=(const FileHandle &) = delete;
 
-  FileHandle(FileHandle &&other) noexcept;
-  FileHandle &operator=(FileHandle &&other) noexcept;
+  FileHandle(FileHandle &&other) noexcept
+    : fp_(other.fp_) {
+        other.fp_ = nullptr;
+  }
+  FileHandle &operator=(FileHandle &&other) noexcept{
+        if (this != &other) {
+            if (fp_) fclose(fp_);
+            fp_ = other.fp_;
+            other.fp_ = nullptr;
+        }
+        return *this;
+    }
 
-  bool valid() const;
-  FILE *get() const;
+  bool valid() const{
+    return fp_ != nullptr;
+}
+  FILE *get() const{
+        return fp_;
+      }
 
 private:
   FILE *fp_ = nullptr;
