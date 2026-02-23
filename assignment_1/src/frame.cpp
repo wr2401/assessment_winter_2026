@@ -15,11 +15,13 @@ void AppendLe16(std::vector<uint8_t>& out, uint16_t v) {
   out.push_back(static_cast<uint8_t>(v & 0xFF));
   out.push_back(static_cast<uint8_t>((v >> 8) & 0xFF));
 }
-
+// 0x1234 & 0xFF = 0x0034
+// (v >> 8) & 0xFF：右移8位取高8位
+// 0x1234 >> 8 = 0x0012
 uint16_t ReadLe16(const std::vector<uint8_t>& in, size_t offset) {
   return static_cast<uint16_t>(in[offset]) | (static_cast<uint16_t>(in[offset + 1]) << 8);
 }
-
+//0x34 | (0x12 << 8) = 0x1234
 bool IsHexChar(char c) {
   return std::isxdigit(static_cast<unsigned char>(c)) != 0;
 }
@@ -38,9 +40,21 @@ uint16_t Crc16Ccitt(const uint8_t* data, size_t len) {
   // 参数：poly=0x1021, init=0xFFFF。
   // CRC 必须覆盖 version..payload 这些字节（即 SOF 之后、crc16 之前的全部内容）。
   // 单元测试依赖这一点。
-  (void)data;
-  (void)len;
-  return 0;
+  uint16_t crc = 0xFFFF;
+  for (size_t i = 0; i < len; i++) {
+    crc ^= (data[i]) << 8;
+    for (int j = 0; j < 8; j++) {
+      if (crc & 0x8000) {
+        crc = (crc << 1) ^ 0x1021;
+      } else {
+        crc <<= 1;
+      }
+    }
+  }
+  return crc;
+  //(void)data;
+  //(void)len;
+  //return 0;
 }
 
 std::vector<uint8_t> Encode(const Frame& f) {
@@ -68,7 +82,8 @@ std::vector<uint8_t> Encode(const Frame& f) {
   out.insert(out.end(), f.payload.begin(), f.payload.end());
 
   // TODO: 替换为真实的 CRC。
-  AppendLe16(out, 0);
+  uint16_t crc = Crc16Ccitt(out.data() + 2, out.size() - 2);
+  AppendLe16(out, crc);
   return out;
 }
 
@@ -80,8 +95,61 @@ bool TryDecode(std::vector<uint8_t>& buffer, Frame& out) {
   // - 若不足以组成完整帧：返回 false，并保持 buffer 不变。
   // - 若候选帧 CRC 错误 / 长度非法：丢弃部分字节并继续搜索（必须避免死循环）。
   // - 成功时：填充 out，从 buffer 中擦除已消费的字节，并返回 true。
-  (void)buffer;
-  (void)out;
+      constexpr uint8_t SOF0 = 0xA5;
+    constexpr uint8_t SOF1 = 0x5A;
+    
+    while (buffer.size() >= 2) {
+
+        if (buffer[0] != SOF0 || buffer[1] != SOF1) {
+            buffer.erase(buffer.begin());
+            continue;
+        }
+        
+        if (buffer.size() < 10) {
+            return false;
+        }
+        
+        uint16_t payload_len = ReadLe16(buffer, 3);
+
+        size_t frame_len = 2 + 1 + 2 + 2 + 1 + payload_len + 2;
+        
+        if (buffer.size() < frame_len) {
+            return false;
+        }
+        
+        size_t crc_start = 2;
+        size_t crc_len = 1 + 2 + 2 + 1 + payload_len;
+        uint16_t calc_crc = Crc16Ccitt(&buffer[crc_start], crc_len);
+        
+        size_t crc_pos = 2 + 1 + 2 + 2 + 1 + payload_len;
+        uint16_t frame_crc = ReadLe16(buffer, crc_pos);
+        
+        if (calc_crc != frame_crc) {
+            buffer.erase(buffer.begin());
+            continue;
+        }
+        
+        if (payload_len > 65535) {
+            buffer.erase(buffer.begin());
+            continue;
+        }
+        
+        out.version = buffer[2];
+        out.seq = ReadLe16(buffer, 2 + 1 + 2);
+        out.type = buffer[2 + 1 + 2 + 2];
+        
+        size_t payload_start = 2 + 1 + 2 + 2 + 1;
+        out.payload.clear();
+        out.payload.insert(out.payload.end(),
+                          buffer.begin() + payload_start,
+                          buffer.begin() + payload_start + payload_len);
+
+        buffer.erase(buffer.begin(), buffer.begin() + frame_len);
+        return true;
+    }
+    
+  //(void)buffer;
+  //(void)out;
   return false;
 }
 
